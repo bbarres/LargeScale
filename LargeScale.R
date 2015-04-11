@@ -4,16 +4,21 @@
 ###############################################################################
 ###############################################################################
 
+#loading the packages needed
 library(maptools)
 library(rgdal)
 library(mapdata)
 library(mapplots)
 library(adegenet)
 library(plyr)
+library(adegenet)
+library(gdata)
 
-#loading the data, don't forget to set the right working directory
+#loading the geographic data, don't forget to set the right working directory
 setwd("~/work/Rfichiers/Githuber/LargeScale_data")
 World<-readShapePoly("CNTR_RG_03M_2010.shp",proj4string=CRS("+init=epsg:4326"))
+
+#loading the population information
 sample_info<-read.table("sample_info3.txt", header=TRUE, sep="\t", dec=".")
 patch_info<-read.table("patch_LargeScale.txt",header=TRUE,sep="\t")
 patch_coord<-patch_info
@@ -22,31 +27,18 @@ coordinates(patch_coord)<-~Latitude+Longitude
 proj4string(patch_coord)<-CRS("+init=epsg:4326")
 
 plot(World,col="black")
-plot(World[World$CNTR_ID,],ylim=c(43,63),xlim=c(10,20), col="grey",border="grey")
+plot(World[World$CNTR_ID,],ylim=c(43,63),xlim=c(10,20), 
+     col="grey",border="grey")
+plot(World[World$CNTR_ID,],ylim=c(43,63),xlim=c(10,20), 
+     col="grey",border="black")
 
 
 
 
-#template for the dapc
-
-###############################################################################
-###############################################################################
-#Script for the analyses of Myzus population sampled on peach trees
-###############################################################################
-###############################################################################
-
-
-#loading the packages necessary for the analysis
-library(adegenet)
-library(gdata)
-
-#Loading the datafile into R, first you need to set the right working directory
-setwd("~/work/Rfichiers/Githuber/PeachMyz_data")
 
 #first of all, we load the genetic dataset
 MyzPeach<-read.table("MyzPeach.dat",header=T,sep="\t")
-#here is the structure of the datafile, for explanation of each columns, see 
-#ReadMe.txt file in DRYAD repository
+
 head(MyzPeach)
 #a summary of the different variables
 summary(MyzPeach)
@@ -107,7 +99,47 @@ scatter(dapcJDDade,xax=1,yax=2,cstar=1,cell=0,clab=0,col=coloor,
 
 ###############################################################################
 ###############################################################################
-#DAPC on microsatellites and resistance genotypes
+#DAPC on SNP only
+###############################################################################
+###############################################################################
+
+#converting data to a genind format, first we use only the microsatellite data
+JDDsnp<-df2genind(JDD[,c("MP_27","MP_39","MP_44","MP_5","MP_7","MP_23",
+                           "MP_45","MP_28","MP_9","MP_13","MP_2","MP_38",
+                           "MP_4","MP_46")],
+                    ncode=6,ind.names=JDD$sample_ID, 
+                    pop=JDD$patch_ID,missing=NA,ploidy=2)
+#include the coordinates of the samples
+JDDsnp@other$xy<-JDD[,c("longitude","latitude")]
+
+#now we analyse the adegenet format dataset with dapc
+JDDade<-JDDsnp
+#determination of the number of clusters
+clustJDDade<- find.clusters(JDDade,max.n.clust=35)
+#with 40 PCs, we lost nearly no information
+clustJDDade<- find.clusters(JDDade,n.pca=40,max.n.clust=35) #chose 4 clusters
+#which individuals in which clusters per population
+table(pop(JDDade),clustJDDade$grp)
+#DAPC by itself, first we try to optimized the number of principal component (PCs) 
+#to retain to perform the analysis
+dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=5,n.pca=100)
+temp<-optim.a.score(dapcJDDade)
+dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=5,n.pca=30)
+temp<-optim.a.score(dapcJDDade)
+dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=4,n.pca=10)
+#STRUCTURE-like graphic
+compoplot(dapcJDDade,lab=truenames(JDDade)$pop,legend=FALSE,
+          cex.names=0.3,cex.lab=0.5,cex.axis=0.5,col=coloor)
+#scatter plot
+scatter(dapcJDDade,xax=1, yax=2,col=coloor)
+#a more beautifull scatter plot
+scatter(dapcJDDade,xax=1,yax=2,cstar=1,cell=0,clab=0,col=coloor,
+        solid=0.3,pch=19,cex=3,scree.da=TRUE)
+
+
+###############################################################################
+###############################################################################
+#DAPC on SNP and microsatellites
 ###############################################################################
 ###############################################################################
 
