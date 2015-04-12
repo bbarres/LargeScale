@@ -13,44 +13,55 @@ library(adegenet)
 library(plyr)
 library(adegenet)
 library(gdata)
+library(RColorBrewer)
 
 #loading the geographic data, don't forget to set the right working directory
 setwd("~/work/Rfichiers/Githuber/LargeScale_data")
 World<-readShapePoly("CNTR_RG_03M_2010.shp",proj4string=CRS("+init=epsg:4326"))
 
 #loading the population information
-sample_info<-read.table("sample_info3.txt", header=TRUE, sep="\t", dec=".")
-patch_info<-read.table("patch_LargeScale.txt",header=TRUE,sep="\t")
+patch_info<-read.table("larscapatch.dat",header=TRUE,sep="\t",dec=".")
+#turn the information in a spatialpoints object
 patch_coord<-patch_info
-coordinates(patch_coord)<-~Latitude+Longitude
+coordinates(patch_coord)<-~longitude+latitude
 #We then define the coordinates system used
 proj4string(patch_coord)<-CRS("+init=epsg:4326")
 
 plot(World,col="black")
 plot(World[World$CNTR_ID,],ylim=c(43,63),xlim=c(10,20), 
      col="grey",border="grey")
+
+#map of the surveyed samples
 plot(World[World$CNTR_ID,],ylim=c(43,63),xlim=c(10,20), 
      col="grey",border="black")
+#we add the intensity of the sampling in infeted patches
+points(patch_coord,cex=sqrt(as.numeric(patch_coord@data$nb_sample)),
+       bg=rgb(1,0,0,0.5),pch=21,col=rgb(1,0,0,1))
+#then we add the patch without infection
+points(patch_coord[as.numeric(patch_coord@data$PA)==0,],col="green3",pch=19)
 
-
-
+#map of the relative proportion of coinfection in the different populations
+plot(World[World$CNTR_ID,],ylim=c(43,63),xlim=c(10,20), 
+     col="grey",border="black")
+stars(cbind(patch_coord@data$nb_coinf,patch_coord@data$nb_pure),draw.segment=TRUE,
+      locations=coordinates(patch_coord),add=T,len=2,radius=FALSE,full=FALSE,
+      col.segments=c(6,4))
 
 
 #first of all, we load the genetic dataset
-MyzPeach<-read.table("MyzPeach.dat",header=T,sep="\t")
+larscagen<-read.table("larscagen.dat",header=T,sep="\t",dec=".")
 
-head(MyzPeach)
 #a summary of the different variables
-summary(MyzPeach)
-colnames(MyzPeach)
+summary(larscagen)
+colnames(larscagen)
 #number of individuals in each sampled populations
-table(MyzPeach$patch_ID)
+table(larscagen$patch_ID)
 #total number of individuals
-sum(table(MyzPeach$patch_ID)) #312 individuals
+sum(table(larscagen$patch_ID)) #267 individuals
 
-
-#here you can select the sub dataset you want, for a first analysis, we take
-#the entire dataset
+#here we select only a part of the samples for further analysis
+#we remove the individuals with multiple allele (ie coinfection)
+#and we remove the second column of the 
 JDD<-MyzPeach #name of the input file
 JDD<-drop.levels(JDD)
 #let's define a set of color for keeping some consistency in the plots
