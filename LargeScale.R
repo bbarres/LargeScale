@@ -50,6 +50,8 @@ stars(cbind(patch_coord@data$nb_coinf,patch_coord@data$nb_pure),draw.segment=TRU
 
 #first of all, we load the genetic dataset
 larscagen<-read.table("larscagen.dat",header=T,sep="\t",dec=".")
+#recode the missing genotype data
+larscagen[larscagen==-9]<-NA
 
 #a summary of the different variables
 summary(larscagen)
@@ -61,9 +63,37 @@ sum(table(larscagen$patch_ID)) #267 individuals
 
 #here we select only a part of the samples for further analysis
 #we remove the individuals with multiple allele (ie coinfection)
-#and we remove the second column of the 
-JDD<-MyzPeach #name of the input file
-JDD<-drop.levels(JDD)
+#and we remove the second allele of the markers because it is 
+#unnecessary with no coinfection for an haploid species
+JDD<-larscagen
+#removing unnecessary allele2 columns
+JDDhap<-subset(JDD,select=-c(uPP01,uPP05,uPP07,uPP09,uPP20,
+                             h_20101214_c1217_640.5307,
+                             h_20101214_c1336_788.5288,
+                             h_20101214_c1421_219.5293,
+                             h_20101214_c1421_455.5292,
+                             h_20101214_c1720i_2036.5304,
+                             h_20101214_c1892_2119.5284,
+                             h_20101214_c2493_i_601.5301,
+                             h_20101214_c2804_701.5309,
+                             h_20101214_c3117_1457.5310,
+                             h_20101214_c3926_348.5286,
+                             h_20101214_c3997_i_419.5298,
+                             h_20101214_c4769_1106.5305,
+                             h_20101214_c5096_985.5294,
+                             h_20101214_c5876_431.5299,
+                             h_20101214_rep_c542_236.5287,
+                             h_20101214_rep_c6068_457.5290,
+                             h_20101214_rep_c664_2300.5297,
+                             h_20101214_rep_c707_1118.5296,
+                             h_20101214_rep_c707_1234.5303))
+#removing coinfection
+JDDsing<-JDDhap[JDDhap$coinf==0,]
+JDDsing<-drop.levels(JDDsing)
+#we also select a subset of the dataset without repeated MLG
+JDDcc<-JDDsing[JDDsing$MLGrepeat==0,]
+JDDcc<-drop.levels(JDDcc)
+
 #let's define a set of color for keeping some consistency in the plots
 coloor<-c("red","green","blue","yellow","orchid")
 
@@ -75,29 +105,28 @@ coloor<-c("red","green","blue","yellow","orchid")
 ###############################################################################
 
 #converting data to a genind format, first we use only the microsatellite data
-JDDmicro<-df2genind(JDD[,c("MP_27","MP_39","MP_44","MP_5","MP_7","MP_23",
-                           "MP_45","MP_28","MP_9","MP_13","MP_2","MP_38",
-                           "MP_4","MP_46")],
-                    ncode=6,ind.names=JDD$sample_ID, 
-                    pop=JDD$patch_ID,missing=NA,ploidy=2)
+JDDmicro<-df2genind(JDDcc[,c("uPP01_1","uPP05_1","uPP07_1","uPP09_1",
+                             "uPP20_1")],
+                    ncode=3,ind.names=JDDcc$sample_ID, 
+                    pop=JDDcc$geo_area,missing=NA,ploidy=1)
 #include the coordinates of the samples
-JDDmicro@other$xy<-JDD[,c("longitude","latitude")]
+JDDmicro@other$xy<-JDDcc[,c("longitude","latitude")]
 
 #now we analyse the adegenet format dataset with dapc
 JDDade<-JDDmicro
 #determination of the number of clusters
-clustJDDade<- find.clusters(JDDade,max.n.clust=35)
-#with 40 PCs, we lost nearly no information
-clustJDDade<- find.clusters(JDDade,n.pca=40,max.n.clust=35) #chose 4 clusters
+clustJDDade<- find.clusters(JDDade,max.n.clust=25)
+#with 15 PCs, we lost nearly no information
+clustJDDade<- find.clusters(JDDade,n.pca=15,max.n.clust=25) #chose 3/4 clusters
 #which individuals in which clusters per population
 table(pop(JDDade),clustJDDade$grp)
-#DAPC by itself, first we try to optimized the number of principal component (PCs) 
+#DAPC , first we try to optimized the number of principal component (PCs) 
 #to retain to perform the analysis
-dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=5,n.pca=100)
+dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=4,n.pca=40)
 temp<-optim.a.score(dapcJDDade)
-dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=5,n.pca=30)
+dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=3,n.pca=10)
 temp<-optim.a.score(dapcJDDade)
-dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=4,n.pca=10)
+dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=2,n.pca=3)
 #STRUCTURE-like graphic
 compoplot(dapcJDDade,lab=truenames(JDDade)$pop,legend=FALSE,
           cex.names=0.3,cex.lab=0.5,cex.axis=0.5,col=coloor)
@@ -115,29 +144,45 @@ scatter(dapcJDDade,xax=1,yax=2,cstar=1,cell=0,clab=0,col=coloor,
 ###############################################################################
 
 #converting data to a genind format, first we use only the microsatellite data
-JDDsnp<-df2genind(JDD[,c("MP_27","MP_39","MP_44","MP_5","MP_7","MP_23",
-                           "MP_45","MP_28","MP_9","MP_13","MP_2","MP_38",
-                           "MP_4","MP_46")],
-                    ncode=6,ind.names=JDD$sample_ID, 
-                    pop=JDD$patch_ID,missing=NA,ploidy=2)
+JDDsnp<-df2genind(JDDcc[,c("h_20101214_c1217_640.5307_1",
+                           "h_20101214_c1336_788.5288_1",
+                           "h_20101214_c1421_219.5293_1",
+                           "h_20101214_c1421_455.5292_1",
+                           "h_20101214_c1720i_2036.5304_1",
+                           "h_20101214_c1892_2119.5284_1",
+                           "h_20101214_c2493_i_601.5301_1",
+                           "h_20101214_c2804_701.5309_1",
+                           "h_20101214_c3117_1457.5310_1",
+                           "h_20101214_c3926_348.5286_1",
+                           "h_20101214_c3997_i_419.5298_1",
+                           "h_20101214_c4769_1106.5305_1",
+                           "h_20101214_c5096_985.5294_1",
+                           "h_20101214_c5876_431.5299_1",
+                           "h_20101214_rep_c542_236.5287_1",
+                           "h_20101214_rep_c6068_457.5290_1",
+                           "h_20101214_rep_c664_2300.5297_1",
+                           "h_20101214_rep_c707_1118.5296_1",
+                           "h_20101214_rep_c707_1234.5303_1")],
+                    ncode=3,ind.names=JDDcc$sample_ID, 
+                    pop=JDDcc$geo_area,missing=NA,ploidy=1)
 #include the coordinates of the samples
-JDDsnp@other$xy<-JDD[,c("longitude","latitude")]
+JDDsnp@other$xy<-JDDcc[,c("longitude","latitude")]
 
 #now we analyse the adegenet format dataset with dapc
 JDDade<-JDDsnp
 #determination of the number of clusters
-clustJDDade<- find.clusters(JDDade,max.n.clust=35)
+clustJDDade<- find.clusters(JDDade,max.n.clust=25)
 #with 40 PCs, we lost nearly no information
-clustJDDade<- find.clusters(JDDade,n.pca=40,max.n.clust=35) #chose 4 clusters
+clustJDDade<- find.clusters(JDDade,n.pca=12,max.n.clust=25) #chose 4 clusters
 #which individuals in which clusters per population
 table(pop(JDDade),clustJDDade$grp)
-#DAPC by itself, first we try to optimized the number of principal component (PCs) 
+#DAPC, first we try to optimized the number of principal component (PCs) 
 #to retain to perform the analysis
-dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=5,n.pca=100)
-temp<-optim.a.score(dapcJDDade)
 dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=5,n.pca=30)
 temp<-optim.a.score(dapcJDDade)
-dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=4,n.pca=10)
+dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=5,n.pca=10)
+temp<-optim.a.score(dapcJDDade)
+dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=2,n.pca=3)
 #STRUCTURE-like graphic
 compoplot(dapcJDDade,lab=truenames(JDDade)$pop,legend=FALSE,
           cex.names=0.3,cex.lab=0.5,cex.axis=0.5,col=coloor)
@@ -150,34 +195,50 @@ scatter(dapcJDDade,xax=1,yax=2,cstar=1,cell=0,clab=0,col=coloor,
 
 ###############################################################################
 ###############################################################################
-#DAPC on SNP and microsatellites
+#DAPC on both SNP and microsatellites markers
 ###############################################################################
 ###############################################################################
 
-#converting data to a genind format, first we use only the microsatellite data
-JDDall<-df2genind(JDD[,c("MP_27","MP_39","MP_44","MP_5","MP_7","MP_23",
-                         "MP_45","MP_28","MP_9","MP_13","MP_2","MP_38",
-                         "MP_4","MP_46","kdr","skdr","R81T","MACE")],
-                  ncode=6,ind.names=JDD$sample_ID, 
-                  pop=JDD$patch_ID,missing=NA,ploidy=2)
+JDDall<-df2genind(JDDcc[,c("uPP01_1","uPP05_1","uPP07_1","uPP09_1",
+                           "uPP20_1","h_20101214_c1217_640.5307_1",
+                           "h_20101214_c1336_788.5288_1",
+                           "h_20101214_c1421_219.5293_1",
+                           "h_20101214_c1421_455.5292_1",
+                           "h_20101214_c1720i_2036.5304_1",
+                           "h_20101214_c1892_2119.5284_1",
+                           "h_20101214_c2493_i_601.5301_1",
+                           "h_20101214_c2804_701.5309_1",
+                           "h_20101214_c3117_1457.5310_1",
+                           "h_20101214_c3926_348.5286_1",
+                           "h_20101214_c3997_i_419.5298_1",
+                           "h_20101214_c4769_1106.5305_1",
+                           "h_20101214_c5096_985.5294_1",
+                           "h_20101214_c5876_431.5299_1",
+                           "h_20101214_rep_c542_236.5287_1",
+                           "h_20101214_rep_c6068_457.5290_1",
+                           "h_20101214_rep_c664_2300.5297_1",
+                           "h_20101214_rep_c707_1118.5296_1",
+                           "h_20101214_rep_c707_1234.5303_1")],
+                  ncode=3,ind.names=JDDcc$sample_ID, 
+                  pop=JDDcc$geo_area,missing=NA,ploidy=1)
 #include the coordinates of the samples
-JDDall@other$xy<-JDD[,c("longitude","latitude")]
+JDDall@other$xy<-JDDcc[,c("longitude","latitude")]
 
 #now we analyse the adegenet format dataset with dapc
 JDDade<-JDDall
 #determination of the number of clusters
 clustJDDade<- find.clusters(JDDade,max.n.clust=35)
 #with 40 PCs, we lost nearly no information
-clustJDDade<- find.clusters(JDDade,n.pca=40,max.n.clust=35) #chose 4 clusters
+clustJDDade<- find.clusters(JDDade,n.pca=30,max.n.clust=20) #chose 4 clusters
 #which individuals in which clusters per population
 table(pop(JDDade),clustJDDade$grp)
-#DAPC by itself, first we try to optimized the number of principal component (PCs) 
+#DAPC, first we try to optimized the number of principal component (PCs) 
 #to retain to perform the analysis
-dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=5,n.pca=100)
-temp<-optim.a.score(dapcJDDade)
 dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=5,n.pca=30)
 temp<-optim.a.score(dapcJDDade)
-dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=4,n.pca=7)
+dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=5,n.pca=10)
+temp<-optim.a.score(dapcJDDade)
+dapcJDDade<-dapc(JDDade,clustJDDade$grp,n.da=3,n.pca=4)
 #STRUCTURE-like graphic
 compoplot(dapcJDDade,lab=truenames(JDDade)$pop,legend=FALSE,
           cex.names=0.3,cex.lab=0.5,cex.axis=0.5,col=coloor)
