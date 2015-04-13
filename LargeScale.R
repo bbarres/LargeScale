@@ -7,6 +7,7 @@
 #loading the packages needed
 library(maptools)
 library(rgdal)
+library(scales)
 library(mapdata)
 library(mapplots)
 library(adegenet)
@@ -43,12 +44,47 @@ points(patch_coord[as.numeric(patch_coord@data$PA)==0,],col="green3",pch=19)
 #map of the relative proportion of coinfection in the different populations
 plot(World[World$CNTR_ID,],ylim=c(43,63),xlim=c(10,20), 
      col="grey",border="black")
-stars(cbind(patch_coord@data$nb_coinf,patch_coord@data$nb_pure),draw.segment=TRUE,
-      locations=coordinates(patch_coord),add=T,len=2,radius=FALSE,full=FALSE,
-      col.segments=c(6,4))
+stars(cbind(patch_coord@data$nb_coinf,patch_coord@data$nb_pure),
+      draw.segment=TRUE,locations=coordinates(patch_coord),add=T,
+      len=2,radius=FALSE,full=FALSE,col.segments=c(6,4))
+#same map but with pie chart instead of the star-system
+plot(World[World$CNTR_ID,],ylim=c(43,63),xlim=c(10,20), 
+     col="grey",border="black")
+draw.pie(x=patch_info$longitude,y=patch_info$latitude,
+         z=cbind(patch_info$nb_pure,patch_info$nb_coinf),
+         col=c(alpha("blue",0.4),alpha("red",0.4)),
+         radius=(sqrt(patch_info$nb_sample)/8),labels=NA)
+#another alternative map without border and smaller pie for zoom on Baltic Sea
+plot(World[World$CNTR_ID,],ylim=c(43,63),xlim=c(10,20), 
+     col="grey",border="transparent")
+draw.pie(x=patch_info$longitude,y=patch_info$latitude,
+         z=cbind(patch_info$nb_pure,patch_info$nb_coinf),
+         col=c(alpha("blue",0.4),alpha("red",0.4)),
+         radius=(sqrt(patch_info$nb_sample)/20),labels=NA)
 
+#because there are still a lot of overlapping, we can merge samples by 
+#geographic area
+geoarea<-cbind(by(patch_info$longitude[patch_coord@data$PA==1],
+                  patch_info$geo_area[patch_coord@data$PA==1],mean),
+               by(patch_info$latitude[patch_coord@data$PA==1],
+                  patch_info$geo_area[patch_coord@data$PA==1],mean),
+               by(patch_info$nb_sample[patch_coord@data$PA==1],
+                  patch_info$geo_area[patch_coord@data$PA==1],sum),
+               by(patch_info$nb_coinf[patch_coord@data$PA==1],
+                  patch_info$geo_area[patch_coord@data$PA==1],sum),
+               by(patch_info$nb_pure[patch_coord@data$PA==1],
+                  patch_info$geo_area[patch_coord@data$PA==1],sum))
+colnames(geoarea)<-c("longitude","latitude","nb_sample","nb_coinf",
+                     "nb_pure")
+geoarea<-as.data.frame(geoarea)
+plot(World[World$CNTR_ID,],ylim=c(43,63),xlim=c(10,20), 
+     col="grey",border="black")
+draw.pie(x=geoarea$longitude,y=geoarea$latitude,
+         z=cbind(geoarea$nb_pure,geoarea$nb_coinf),
+         col=c(alpha("blue",0.8),alpha("red",0.8)),
+         radius=(sqrt(geoarea$nb_sample)/8),labels=NA)
 
-#first of all, we load the genetic dataset
+#loading the genetic dataset
 larscagen<-read.table("larscagen.dat",header=T,sep="\t",dec=".")
 #recode the missing genotype data
 larscagen[larscagen==-9]<-NA
