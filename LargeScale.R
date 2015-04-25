@@ -131,7 +131,7 @@ JDDcc<-JDDsing[JDDsing$MLGrepeat==0,]
 JDDcc<-drop.levels(JDDcc)
 
 #let's define a set of color for keeping some consistency in the plots
-coloor<-c("red","green","blue","yellow","orchid")
+coloor<-c("blue","red","green","violet","orange")
 
 
 ###############################################################################
