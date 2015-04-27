@@ -143,9 +143,11 @@ coloor<-c("blue","red","green","violet","orange")
 #converting data to a genind format, first we use only the microsatellite data
 JDDmicro<-df2genind(JDDcc[,c("uPP01_1","uPP05_1","uPP07_1","uPP09_1",
                              "uPP20_1")],
-                    ncode=3,ind.names=JDDcc$sample_ID, 
+                    ncode=3,ind.names=JDDcc$ID, 
                     pop=JDDcc$geo_area,missing=NA,ploidy=1)
-#include the coordinates of the samples
+#include the populations names and the coordinates of the samples
+JDDmicro@pop.names=c("Western Europe","Central Europe","Sweden","Finland",
+                   "Estonia")
 JDDmicro@other$xy<-JDDcc[,c("longitude","latitude")]
 
 #now we analyse the adegenet format dataset with dapc
@@ -199,9 +201,11 @@ JDDsnp<-df2genind(JDDcc[,c("h_20101214_c1217_640.5307_1",
                            "h_20101214_rep_c664_2300.5297_1",
                            "h_20101214_rep_c707_1118.5296_1",
                            "h_20101214_rep_c707_1234.5303_1")],
-                    ncode=3,ind.names=JDDcc$sample_ID, 
+                    ncode=3,ind.names=JDDcc$ID, 
                     pop=JDDcc$geo_area,missing=NA,ploidy=1)
-#include the coordinates of the samples
+#include the population names and the coordinates of the samples
+JDDsnp@pop.names=c("Western Europe","Central Europe","Sweden","Finland",
+                   "Estonia")
 JDDsnp@other$xy<-JDDcc[,c("longitude","latitude")]
 
 #now we analyse the adegenet format dataset with dapc
@@ -255,9 +259,11 @@ JDDall<-df2genind(JDDcc[,c("uPP01_1","uPP05_1","uPP07_1","uPP09_1",
                            "h_20101214_rep_c664_2300.5297_1",
                            "h_20101214_rep_c707_1118.5296_1",
                            "h_20101214_rep_c707_1234.5303_1")],
-                  ncode=3,ind.names=JDDcc$sample_ID, 
+                  ncode=3,ind.names=JDDcc$ID, 
                   pop=JDDcc$geo_area,missing=NA,ploidy=1)
 #include the coordinates of the samples
+JDDall@pop.names=c("Western Europe","Central Europe","Sweden","Finland",
+                   "Estonia")
 JDDall@other$xy<-JDDcc[,c("longitude","latitude")]
 
 #now we analyse the adegenet format dataset with dapc
