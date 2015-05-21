@@ -291,6 +291,22 @@ scatter(dapcJDDade,xax=1,yax=2,cstar=1,cell=0,clab=0,col=coloor,
         solid=0.3,pch=19,cex=3,scree.da=TRUE)
 
 
+###############################################################################
+###############################################################################
+#plotting the different genetic groups obtained with STRUCTURE
+###############################################################################
+###############################################################################
+
+#The information is already in the input datafile
+plot(World[World$CNTR_ID,],ylim=c(43,63),xlim=c(10,20), 
+     col="grey",border="transparent")
+draw.pie(x=patch_info$longitude,y=patch_info$latitude,
+         z=cbind(patch_info$gen_grp0_0.75,patch_info$gen_grp1_0.75,
+                 patch_info$gen_grp2_0.75,patch_info$gen_grp3_0.75,
+                 patch_info$gen_grp4_0.75),
+         col=c(alpha("white",0.4),alpha("red",0.4),alpha("blue",0.4),
+               alpha("green",0.4),alpha("purple",0.4)),
+         radius=(sqrt(patch_info$nb_sample)/10),labels=NA)
 
 
 
