@@ -300,6 +300,7 @@ scatter(dapcJDDade,xax=1,yax=2,cstar=1,cell=0,clab=0,col=coloor,
 #The information is already in the input datafile
 plot(World[World$CNTR_ID,],ylim=c(43,63),xlim=c(10,20), 
      col="grey",border="transparent")
+#draw the pie chart for each populations
 draw.pie(x=patch_info$longitude,y=patch_info$latitude,
          z=cbind(patch_info$gen_grp0_0.75,patch_info$gen_grp1_0.75,
                  patch_info$gen_grp2_0.75,patch_info$gen_grp3_0.75,
@@ -307,7 +308,25 @@ draw.pie(x=patch_info$longitude,y=patch_info$latitude,
          col=c(alpha("white",0.4),alpha("red",0.4),alpha("blue",0.4),
                alpha("green",0.4),alpha("purple",0.4)),
          radius=(sqrt(patch_info$nb_sample)/10),labels=NA)
+#because of the overlapping, we will add segment to the map
+#first, we remove the populations whithout any pure genotype
+mapgengrp<-patch_info[!is.na(patch_info$nb_pure) & (patch_info$nb_pure>0),]
 
+#find the order by increased latitude for swedish populations
+order(mapgengrp$latitude[mapgengrp$geo_area==3])
+#find the order by increased longitude for Aland populations
+order(mapgengrp$longitude[mapgengrp$geo_area==4])
+#find the order by increased latitude for estoninan populations
+order(mapgengrp$latitude[mapgengrp$geo_area==5])
+
+#draw the pie chart for each populations
+draw.pie(x=patch_info$longitude,y=patch_info$latitude,
+         z=cbind(patch_info$gen_grp0_0.75,patch_info$gen_grp1_0.75,
+                 patch_info$gen_grp2_0.75,patch_info$gen_grp3_0.75,
+                 patch_info$gen_grp4_0.75),
+         col=c(alpha("white",0.4),alpha("red",0.4),alpha("blue",0.4),
+               alpha("green",0.4),alpha("purple",0.4)),
+         radius=(sqrt(patch_info$nb_sample)/10),labels=NA)
 
 
 ###############################################################################
